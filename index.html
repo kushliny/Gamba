@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jednoduchý Automat</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .slot-machine {
+            background: #333;
+            padding: 20px;
+            border: 5px solid #ffcc00;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+            text-align: center;
+        }
+
+        .reels {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .reel {
+            width: 80px;
+            height: 100px;
+            background: white;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            color: #333;
+            border: 2px solid #555;
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input {
+            padding: 8px;
+            font-size: 1rem;
+            width: 100px;
+            text-align: center;
+            border-radius: 5px;
+            border: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: transform 0.1s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        .message {
+            margin-top: 15px;
+            height: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slot-machine">
+        <h1>JACKPOT 777</h1>
+
+        <div class="reels">
+            <div id="reel1" class="reel">7</div>
+            <div id="reel2" class="reel">7</div>
+            <div id="reel3" class="reel">7</div>
+        </div>
+
+        <div class="stats">
+            <div>Aktuální peníze: <span id="balance">1000</span> Kč</div>
+            <div id="win-display" style="color: #ffcc00;">Poslední výhra: 0 Kč</div>
+        </div>
+
+        <div class="controls">
+            <div>
+                Sázka: <input type="number" id="bet-input" value="10" min="1"> Kč
+            </div>
+            <button id="spin-btn" onclick="play()">ZATOČIT!</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const symbols = ['7', 'BAR', '🍋', '🍒', '🔔', '💎'];
+        let balance = 1000;
+
+        function play() {
+            const betInput = document.getElementById('bet-input');
+            const bet = parseInt(betInput.value);
+            const msg = document.getElementById('message');
+            const winDisplay = document.getElementById('win-display');
+            const balanceDisplay = document.getElementById('balance');
+
+            // Kontrola sázky
+            if (isNaN(bet) || bet <= 0) {
+                msg.textContent = "Zadej platnou sázku!";
+                return;
+            }
+            if (bet > balance) {
+                msg.textContent = "Nemáš dost peněz!";
+                return;
+            }
+
+            // Odečtení sázky
+            balance -= bet;
+            balanceDisplay.textContent = balance;
+            msg.textContent = "Točíme...";
+            winDisplay.textContent = "Poslední výhra: 0 Kč";
+
+            // Animace a losování
+            const r1 = symbols[Math.floor(Math.random() * symbols.length)];
+            const r2 = symbols[Math.floor(Math.random() * symbols.length)];
+            const r3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+            // Zobrazení výsledku (můžeme přidat mírné zpoždění pro efekt)
+            setTimeout(() => {
+                document.getElementById('reel1').textContent = r1;
+                document.getElementById('reel2').textContent = r2;
+                document.getElementById('reel3').textContent = r3;
+
+                checkWin(r1, r2, r3, bet);
+            }, 300);
+        }
+
+        function checkWin(r1, r2, r3, bet) {
+            const msg = document.getElementById('message');
+            const balanceDisplay = document.getElementById('balance');
+            const winDisplay = document.getElementById('win-display');
+            let winAmount = 0;
+
+            if (r1 === r2 && r2 === r3) {
+                // Výhra za 3 stejné symboly
+                if (r1 === '7') {
+                    winAmount = bet * 10; // Jackpot pro 777
+                    msg.textContent = "JACKPOT! 777!";
+                } else {
+                    winAmount = bet * 5;
+                    msg.textContent = "VELKÁ VÝHRA!";
+                }
+            } else if (r1 === r2 || r2 === r3 || r1 === r3) {
+                // Výhra za 2 stejné
+                winAmount = bet * 2;
+                msg.textContent = "Malá výhra!";
+            } else {
+                msg.textContent = "Zkus to znovu.";
+            }
+
+            if (winAmount > 0) {
+                balance += winAmount;
+                balanceDisplay.textContent = balance;
+                winDisplay.textContent = `Poslední výhra: ${winAmount} Kč`;
+            }
+        }
+    </script>
+</body>
+</html>
