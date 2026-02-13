@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jednoduchý Automat</title>
+    <title>Slot Machine - Real Spin</title>
     <style>
         body {
             background-color: #1a1a1a;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial Black', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,175 +18,212 @@
         }
 
         .slot-machine {
-            background: #333;
-            padding: 20px;
-            border: 5px solid #ffcc00;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+            background: linear-gradient(180deg, #444, #222);
+            padding: 30px;
+            border: 8px solid #ffd700;
+            border-radius: 30px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.2);
             text-align: center;
         }
 
-        .reels {
+        /* Kontejner pro válce */
+        .reels-container {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            background: #000;
+            padding: 15px;
+            border-radius: 10px;
+            border: 4px solid #555;
+            margin: 20px 0;
+            overflow: hidden; /* Důležité: skryje zbytek pásu */
         }
 
-        .reel {
+        /* Okno jednoho válce */
+        .reel-window {
             width: 80px;
-            height: 100px;
+            height: 80px; /* Výška jednoho symbolu */
             background: white;
             border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Pás se symboly uvnitř okna */
+        .symbol-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); /* Hladký dojezd */
+        }
+
+        .symbol {
+            width: 80px;
+            height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 50px;
+            font-size: 45px;
             color: #333;
-            border: 2px solid #555;
+            box-sizing: border-box;
+            border-bottom: 1px solid #ddd;
         }
 
-        .stats {
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-        }
-
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .stats { margin-bottom: 20px; }
+        .balance-text { font-size: 1.5rem; color: #00ff88; }
+        .win-text { color: #ffd700; min-height: 1.5em; font-size: 1.2rem; margin-top: 5px;}
 
         input {
-            padding: 8px;
-            font-size: 1rem;
-            width: 100px;
-            text-align: center;
+            padding: 10px;
+            width: 70px;
+            font-size: 1.1rem;
             border-radius: 5px;
             border: none;
+            text-align: center;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 1.2rem;
+            padding: 15px 30px;
+            font-size: 1.4rem;
             cursor: pointer;
-            background-color: #ffcc00;
+            background: #e6b800;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
             font-weight: bold;
-            transition: transform 0.1s;
+            box-shadow: 0 5px 0 #997a00;
+            margin-top: 10px;
         }
 
         button:active {
-            transform: scale(0.95);
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #997a00;
         }
 
-        button:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
-
-        .message {
-            margin-top: 15px;
-            height: 20px;
-            font-weight: bold;
-        }
+        button:disabled { background: #666; box-shadow: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="slot-machine">
-        <h1>JACKPOT 777</h1>
-
-        <div class="reels">
-            <div id="reel1" class="reel">7</div>
-            <div id="reel2" class="reel">7</div>
-            <div id="reel3" class="reel">7</div>
-        </div>
-
+        <h1 style="margin-top: 0; color: #ffd700;">ROYAL SLOT</h1>
+        
         <div class="stats">
-            <div>Aktuální peníze: <span id="balance">1000</span> Kč</div>
-            <div id="win-display" style="color: #ffcc00;">Poslední výhra: 0 Kč</div>
+            <div class="balance-text">Kredit: <span id="balance">1000</span> Kč</div>
+            <div id="win-display" class="win-text"></div>
         </div>
 
-        <div class="controls">
-            <div>
-                Sázka: <input type="number" id="bet-input" value="10" min="1"> Kč
-            </div>
-            <button id="spin-btn" onclick="play()">ZATOČIT!</button>
+        <div class="reels-container">
+            <div class="reel-window"><div id="strip1" class="symbol-strip"></div></div>
+            <div class="reel-window"><div id="strip2" class="symbol-strip"></div></div>
+            <div class="reel-window"><div id="strip3" class="symbol-strip"></div></div>
         </div>
 
-        <div class="message" id="message"></div>
+        <div>
+            Sázka: <input type="number" id="bet-input" value="10" min="1">
+        </div>
+
+        <button id="spin-btn" onclick="spin()">ZATOČIT</button>
+        <p id="message">Nastav sázku a hraj!</p>
     </div>
 
     <script>
-        const symbols = ['7', 'BAR', '🍋', '🍒', '🔔', '💎'];
+        const symbols = ['7', '💎', '🍋', '🍒', '🔔', 'BAR'];
+        const symbolHeight = 80; // musí odpovídat CSS
         let balance = 1000;
+        let isSpinning = false;
 
-        function play() {
-            const betInput = document.getElementById('bet-input');
-            const bet = parseInt(betInput.value);
-            const msg = document.getElementById('message');
-            const winDisplay = document.getElementById('win-display');
-            const balanceDisplay = document.getElementById('balance');
-
-            // Kontrola sázky
-            if (isNaN(bet) || bet <= 0) {
-                msg.textContent = "Zadej platnou sázku!";
-                return;
+        // Vytvoření dlouhých pásů symbolů pro efekt točení
+        function createStrip(elementId) {
+            const strip = document.getElementById(elementId);
+            let html = '';
+            // Přidáme 30 náhodných symbolů pro efekt dlouhého točení
+            for (let i = 0; i < 40; i++) {
+                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                html += `<div class="symbol">${symbol}</div>`;
             }
-            if (bet > balance) {
-                msg.textContent = "Nemáš dost peněz!";
-                return;
-            }
-
-            // Odečtení sázky
-            balance -= bet;
-            balanceDisplay.textContent = balance;
-            msg.textContent = "Točíme...";
-            winDisplay.textContent = "Poslední výhra: 0 Kč";
-
-            // Animace a losování
-            const r1 = symbols[Math.floor(Math.random() * symbols.length)];
-            const r2 = symbols[Math.floor(Math.random() * symbols.length)];
-            const r3 = symbols[Math.floor(Math.random() * symbols.length)];
-
-            // Zobrazení výsledku (můžeme přidat mírné zpoždění pro efekt)
-            setTimeout(() => {
-                document.getElementById('reel1').textContent = r1;
-                document.getElementById('reel2').textContent = r2;
-                document.getElementById('reel3').textContent = r3;
-
-                checkWin(r1, r2, r3, bet);
-            }, 300);
+            strip.innerHTML = html;
         }
 
-        function checkWin(r1, r2, r3, bet) {
+        // Inicializace
+        createStrip('strip1');
+        createStrip('strip2');
+        createStrip('strip3');
+
+        function spin() {
+            if (isSpinning) return;
+
+            const bet = parseInt(document.getElementById('bet-input').value);
             const msg = document.getElementById('message');
-            const balanceDisplay = document.getElementById('balance');
             const winDisplay = document.getElementById('win-display');
-            let winAmount = 0;
+            
+            if (bet > balance || bet <= 0) {
+                msg.textContent = "Neplatná sázka nebo málo peněz!";
+                return;
+            }
+
+            isSpinning = true;
+            balance -= bet;
+            document.getElementById('balance').textContent = balance;
+            document.getElementById('spin-btn').disabled = true;
+            winDisplay.textContent = "";
+            msg.textContent = "Točíme...";
+
+            const results = [];
+
+            for (let i = 1; i <= 3; i++) {
+                const strip = document.getElementById(`strip${i}`);
+                const randomIndex = Math.floor(Math.random() * (symbols.length));
+                const finalSymbol = symbols[randomIndex];
+                results.push(finalSymbol);
+
+                // Resetování pásu na začátek bez animace (aby mohl znovu padat dolů)
+                strip.style.transition = 'none';
+                strip.style.top = '0px';
+                
+                // Malý hack pro prohlížeč, aby si všiml resetu pozice
+                strip.offsetHeight; 
+
+                // Spuštění animace po mírném zpoždění
+                const stopAt = 30 + randomIndex; // zastavíme na symbolu hluboko v poli (index 30+)
+                const offset = -(stopAt * symbolHeight);
+                
+                // Nastavení animace s různým časem pro každý válec
+                strip.style.transition = `top ${1.5 + (i * 0.5)}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                strip.style.top = offset + 'px';
+
+                // Přepíšeme symbol na cílové pozici, aby odpovídal našemu výsledku
+                strip.children[stopAt].textContent = finalSymbol;
+            }
+
+            // Vyhodnocení po skončení poslední animace (cca 3s)
+            setTimeout(() => {
+                evaluate(results, bet);
+                isSpinning = false;
+                document.getElementById('spin-btn').disabled = false;
+            }, 3000);
+        }
+
+        function evaluate(results, bet) {
+            const [r1, r2, r3] = results;
+            let win = 0;
+            const msg = document.getElementById('message');
 
             if (r1 === r2 && r2 === r3) {
-                // Výhra za 3 stejné symboly
-                if (r1 === '7') {
-                    winAmount = bet * 10; // Jackpot pro 777
-                    msg.textContent = "JACKPOT! 777!";
-                } else {
-                    winAmount = bet * 5;
-                    msg.textContent = "VELKÁ VÝHRA!";
-                }
+                win = (r1 === '7') ? bet * 50 : bet * 10;
+                msg.textContent = "VÝBORNĚ! Trojice!";
             } else if (r1 === r2 || r2 === r3 || r1 === r3) {
-                // Výhra za 2 stejné
-                winAmount = bet * 2;
-                msg.textContent = "Malá výhra!";
+                win = bet * 2;
+                msg.textContent = "Dvojice! Máš výhru.";
             } else {
                 msg.textContent = "Zkus to znovu.";
             }
 
-            if (winAmount > 0) {
-                balance += winAmount;
-                balanceDisplay.textContent = balance;
-                winDisplay.textContent = `Poslední výhra: ${winAmount} Kč`;
+            if (win > 0) {
+                balance += win;
+                document.getElementById('balance').textContent = balance;
+                document.getElementById('win-display').textContent = `VYHRÁL JSI: ${win} Kč`;
             }
         }
     </script>
