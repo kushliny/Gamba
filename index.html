@@ -3,227 +3,584 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slot Machine - Real Spin</title>
+    <title>Neon Royal Slots - Deluxe</title>
     <style>
+        :root {
+            --primary: #ff00de;
+            --secondary: #00fff2;
+            --gold: #ffd700;
+            --dark: #0f0f13;
+            --panel-bg: rgba(20, 20, 25, 0.95);
+        }
+
         body {
-            background-color: #1a1a1a;
+            background-color: var(--dark);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #2a2a4e 0%, #000 90%),
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
             color: white;
-            font-family: 'Arial Black', sans-serif;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .slot-machine {
-            background: linear-gradient(180deg, #444, #222);
-            padding: 30px;
-            border: 8px solid #ffd700;
-            border-radius: 30px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,215,0,0.2);
-            text-align: center;
-        }
-
-        /* Kontejner pro válce */
-        .reels-container {
+        /* --- UI PANEL --- */
+        .control-panel {
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--secondary);
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.15);
+            padding: 15px 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 1200px;
             display: flex;
-            gap: 15px;
-            background: #000;
-            padding: 15px;
-            border-radius: 10px;
-            border: 4px solid #555;
-            margin: 20px 0;
-            overflow: hidden; /* Důležité: skryje zbytek pásu */
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            backdrop-filter: blur(15px);
         }
 
-        /* Okno jednoho válce */
-        .reel-window {
-            width: 80px;
-            height: 80px; /* Výška jednoho symbolu */
-            background: white;
-            border-radius: 5px;
+        .stat-box span { display: block; font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 1.8rem; font-weight: 800; text-shadow: 0 0 15px currentColor; }
+        .val-gold { color: var(--gold); }
+        .val-blue { color: var(--secondary); }
+
+        .controls-group { display: flex; align-items: center; gap: 20px; }
+
+        input[type="number"], input[type="range"] {
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--secondary); box-shadow: 0 0 10px rgba(0, 255, 242, 0.3); }
+
+        /* Tlačítko SPIN */
+        button#spin-btn {
+            background: linear-gradient(135deg, #ff0055 0%, #ff00de 100%);
+            border: none;
+            padding: 15px 60px;
+            font-size: 1.6rem;
+            color: white;
+            font-weight: 900;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(255, 0, 222, 0.4), inset 0 2px 5px rgba(255,255,255,0.3);
+            transition: all 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             position: relative;
             overflow: hidden;
         }
 
-        /* Pás se symboly uvnitř okna */
+        button#spin-btn:active { transform: scale(0.96); box-shadow: 0 5px 15px rgba(255, 0, 222, 0.4); }
+        button#spin-btn:disabled { filter: grayscale(1); cursor: not-allowed; opacity: 0.6; }
+        
+        /* Lesk tlačítka */
+        button#spin-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine { 0% { left: -100%; } 20% { left: 100%; } 100% { left: 100%; } }
+
+        /* --- GRID --- */
+        #machines-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 25px;
+            width: 100%;
+            max-width: 1400px;
+            margin-top: 40px;
+            padding-bottom: 80px;
+        }
+
+        /* --- AUTOMAT --- */
+        .slot-machine {
+            background: linear-gradient(180deg, #444, #1a1a1a);
+            border: 3px solid #555;
+            border-radius: 15px;
+            padding: 12px;
+            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        /* Efekt výhry na automatu */
+        .slot-machine.winner-regular {
+            border-color: var(--secondary);
+            box-shadow: 0 0 25px var(--secondary);
+            z-index: 10;
+        }
+
+        .slot-machine.winner-jackpot {
+            border-color: var(--gold);
+            animation: rainbow-border 1s linear infinite, shake 0.5s ease-in-out;
+            z-index: 20;
+            transform: scale(1.05);
+        }
+
+        @keyframes rainbow-border {
+            0% { box-shadow: 0 0 30px #ff0000; border-color: #ff0000; }
+            20% { box-shadow: 0 0 30px #ffff00; border-color: #ffff00; }
+            40% { box-shadow: 0 0 30px #00ff00; border-color: #00ff00; }
+            60% { box-shadow: 0 0 30px #00ffff; border-color: #00ffff; }
+            80% { box-shadow: 0 0 30px #0000ff; border-color: #0000ff; }
+            100% { box-shadow: 0 0 30px #ff00ff; border-color: #ff00ff; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: scale(1.05) translateX(0); }
+            25% { transform: scale(1.05) translateX(-5px); }
+            75% { transform: scale(1.05) translateX(5px); }
+        }
+
+        .reels-row {
+            display: flex;
+            gap: 6px;
+            background: #000;
+            padding: 6px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,1); /* Vnitřní stín pro hloubku */
+        }
+
+        .reel-window {
+            height: 70px;
+            background: linear-gradient(to bottom, #dcdcdc 0%, #fff 50%, #dcdcdc 100%); /* Kovový efekt */
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Zatemnění válců nahoře a dole pro 3D efekt */
+        .reel-window::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.4) 100%);
+            pointer-events: none;
+            z-index: 5;
+        }
+
         .symbol-strip {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+            top: 0; left: 0; width: 100%;
             display: flex;
             flex-direction: column;
-            transition: top 2s cubic-bezier(0.45, 0.05, 0.55, 0.95); /* Hladký dojezd */
+            /* Motion blur filtr, aktivuje se JS */
+            filter: blur(0px); 
+            will-change: top; 
         }
 
         .symbol {
-            width: 80px;
-            height: 80px;
+            width: 100%;
+            height: 70px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 45px;
-            color: #333;
-            box-sizing: border-box;
-            border-bottom: 1px solid #ddd;
+            font-size: 38px;
+            line-height: 70px;
+            /* Trochu stínu pod symbolem */
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
         }
 
-        .stats { margin-bottom: 20px; }
-        .balance-text { font-size: 1.5rem; color: #00ff88; }
-        .win-text { color: #ffd700; min-height: 1.5em; font-size: 1.2rem; margin-top: 5px;}
-
-        input {
-            padding: 10px;
-            width: 70px;
-            font-size: 1.1rem;
-            border-radius: 5px;
-            border: none;
-            text-align: center;
+        .machine-win-label {
+            position: absolute;
+            top: -15px;
+            right: -10px;
+            background: var(--gold);
+            color: black;
+            font-weight: 900;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 1rem;
+            opacity: 0;
+            transform: scale(0) rotate(-10deg);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 25;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 2px solid white;
         }
 
-        button {
-            padding: 15px 30px;
-            font-size: 1.4rem;
-            cursor: pointer;
-            background: #e6b800;
-            border: none;
-            border-radius: 10px;
+        /* --- JACKPOT OVERLAY --- */
+        #jackpot-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        #jackpot-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .jackpot-text {
+            font-size: 8rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-transform: uppercase;
+            text-shadow: 0 0 50px var(--gold), 0 0 10px white;
+            animation: pulse-text 0.8s infinite alternate;
+        }
+
+        .jackpot-subtext {
+            font-size: 3rem;
+            color: white;
+            margin-top: 20px;
+        }
+
+        @keyframes pulse-text {
+            from { transform: scale(1); text-shadow: 0 0 30px var(--gold); }
+            to { transform: scale(1.1); text-shadow: 0 0 80px var(--gold), 0 0 20px white; }
+        }
+
+        /* --- CONFETTI / COINS --- */
+        .coin {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            background-color: var(--gold);
+            border-radius: 50%;
+            border: 2px solid #ffd000;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+            top: -50px;
+            z-index: 900;
+            animation: fall linear forwards;
+        }
+
+        .coin::before {
+            content: '$';
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%; height: 100%;
+            color: #b8860b;
             font-weight: bold;
-            box-shadow: 0 5px 0 #997a00;
-            margin-top: 10px;
+            font-size: 18px;
         }
 
-        button:active {
-            transform: translateY(3px);
-            box-shadow: 0 2px 0 #997a00;
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); }
         }
 
-        button:disabled { background: #666; box-shadow: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="slot-machine">
-        <h1 style="margin-top: 0; color: #ffd700;">ROYAL SLOT</h1>
-        
-        <div class="stats">
-            <div class="balance-text">Kredit: <span id="balance">1000</span> Kč</div>
-            <div id="win-display" class="win-text"></div>
-        </div>
-
-        <div class="reels-container">
-            <div class="reel-window"><div id="strip1" class="symbol-strip"></div></div>
-            <div class="reel-window"><div id="strip2" class="symbol-strip"></div></div>
-            <div class="reel-window"><div id="strip3" class="symbol-strip"></div></div>
-        </div>
-
-        <div>
-            Sázka: <input type="number" id="bet-input" value="10" min="1">
-        </div>
-
-        <button id="spin-btn" onclick="spin()">ZATOČIT</button>
-        <p id="message">Nastav sázku a hraj!</p>
+    <div id="jackpot-overlay" onclick="closeJackpot()">
+        <div class="jackpot-text">JACKPOT</div>
+        <div class="jackpot-subtext" id="jackpot-amount">500,000 Kč</div>
+        <div style="margin-top:50px; font-size: 1rem; color: #aaa;">(Klikni pro pokračování)</div>
     </div>
 
-    <script>
-        const symbols = ['7', '💎', '🍋', '🍒', '🔔', 'BAR'];
-        const symbolHeight = 80; // musí odpovídat CSS
-        let balance = 1000;
-        let isSpinning = false;
+    <div class="control-panel">
+        <div class="stats-group" style="display:flex; gap: 40px;">
+            <div class="stat-box">
+                <span>Zůstatek</span>
+                <div class="stat-value val-blue"><span id="balance">15000</span> Kč</div>
+            </div>
+            <div class="stat-box">
+                <span>Poslední výhra</span>
+                <div class="stat-value val-gold" id="last-win">0 Kč</div>
+            </div>
+        </div>
 
-        // Vytvoření dlouhých pásů symbolů pro efekt točení
-        function createStrip(elementId) {
-            const strip = document.getElementById(elementId);
-            let html = '';
-            // Přidáme 30 náhodných symbolů pro efekt dlouhého točení
-            for (let i = 0; i < 40; i++) {
-                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-                html += `<div class="symbol">${symbol}</div>`;
+        <div class="controls-group">
+            <div style="text-align: center;">
+                <label style="color:#aaa; font-size:0.9rem;">Počet automatů: <strong id="machine-count-display" style="color:var(--secondary)">1</strong></label><br>
+                <input type="range" id="machine-slider" min="1" max="25" value="1" oninput="updateMachineCount()">
+            </div>
+
+            <div style="text-align: center;">
+                <label style="color:#aaa; font-size:0.9rem;">Sázka / automat</label><br>
+                <input type="number" id="bet-per-machine" value="10" min="1" style="width: 80px;">
+            </div>
+
+            <div style="text-align: right; margin-right: 10px;">
+                <div style="font-size: 0.8rem; color: #888;">CELKEM</div>
+                <div style="font-size: 1.2rem; font-weight: bold; color: white;" id="total-bet">10 Kč</div>
+            </div>
+
+            <button id="spin-btn" onclick="spinAll()">SPIN</button>
+        </div>
+    </div>
+
+    <div id="machines-container"></div>
+
+    <script>
+        const symbols = ['7', '💎', '🍋', '🍒', '🔔', 'BAR', '🍇', '🍀'];
+        const symbolHeight = 70; 
+        let balance = 15000;
+        let isSpinning = false;
+        let machines = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMachineCount();
+            updateTotalBetDisplay();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && !isSpinning && document.getElementById('jackpot-overlay').style.opacity != '1') {
+                event.preventDefault();
+                spinAll();
             }
-            strip.innerHTML = html;
+        });
+
+        document.getElementById('bet-per-machine').addEventListener('input', updateTotalBetDisplay);
+
+        function updateTotalBetDisplay() {
+            const count = parseInt(document.getElementById('machine-slider').value);
+            const betOne = parseInt(document.getElementById('bet-per-machine').value) || 0;
+            document.getElementById('total-bet').textContent = (count * betOne).toLocaleString() + " Kč";
+            document.getElementById('machine-count-display').textContent = count;
         }
 
-        // Inicializace
-        createStrip('strip1');
-        createStrip('strip2');
-        createStrip('strip3');
+        function updateMachineCount() {
+            if (isSpinning) return;
+            const container = document.getElementById('machines-container');
+            const targetCount = parseInt(document.getElementById('machine-slider').value);
+            updateTotalBetDisplay();
+            container.innerHTML = '';
+            machines = [];
+            for (let i = 0; i < targetCount; i++) createMachineDOM(i);
+        }
 
-        function spin() {
+        function createMachineDOM(index) {
+            const container = document.getElementById('machines-container');
+            const div = document.createElement('div');
+            div.className = 'slot-machine';
+            div.id = `machine-${index}`;
+            div.innerHTML = `
+                <div class="machine-win-label" id="win-label-${index}">+0</div>
+                <div class="reels-row">
+                    <div class="reel-window"><div id="m${index}-r1" class="symbol-strip"></div></div>
+                    <div class="reel-window"><div id="m${index}-r2" class="symbol-strip"></div></div>
+                    <div class="reel-window"><div id="m${index}-r3" class="symbol-strip"></div></div>
+                </div>
+            `;
+            container.appendChild(div);
+            
+            const strips = [
+                document.getElementById(`m${index}-r1`),
+                document.getElementById(`m${index}-r2`),
+                document.getElementById(`m${index}-r3`)
+            ];
+            strips.forEach(strip => fillStrip(strip));
+            machines.push({ id: index, strips: strips, element: div });
+        }
+
+        function fillStrip(stripElement) {
+            let html = '';
+            for (let i = 0; i < 40; i++) {
+                const s = symbols[Math.floor(Math.random() * symbols.length)];
+                html += `<div class="symbol">${s}</div>`;
+            }
+            stripElement.innerHTML = html;
+        }
+
+        function spinAll() {
             if (isSpinning) return;
 
-            const bet = parseInt(document.getElementById('bet-input').value);
-            const msg = document.getElementById('message');
-            const winDisplay = document.getElementById('win-display');
-            
-            if (bet > balance || bet <= 0) {
-                msg.textContent = "Neplatná sázka nebo málo peněz!";
-                return;
-            }
+            const betPerMachine = parseInt(document.getElementById('bet-per-machine').value);
+            const totalBet = betPerMachine * machines.length;
 
-            isSpinning = true;
-            balance -= bet;
-            document.getElementById('balance').textContent = balance;
+            if (totalBet > balance) { alert("Nedostatek peněz!"); return; }
+            if (totalBet <= 0) return;
+
+            balance -= totalBet;
+            document.getElementById('balance').textContent = balance.toLocaleString();
             document.getElementById('spin-btn').disabled = true;
-            winDisplay.textContent = "";
-            msg.textContent = "Točíme...";
+            document.getElementById('machine-slider').disabled = true;
+            isSpinning = true;
 
-            const results = [];
+            // Reset UI
+            machines.forEach(m => {
+                m.element.classList.remove('winner-regular', 'winner-jackpot');
+                const label = document.getElementById(`win-label-${m.id}`);
+                label.style.opacity = '0';
+                label.style.transform = 'scale(0)';
+            });
 
-            for (let i = 1; i <= 3; i++) {
-                const strip = document.getElementById(`strip${i}`);
-                const randomIndex = Math.floor(Math.random() * (symbols.length));
-                const finalSymbol = symbols[randomIndex];
-                results.push(finalSymbol);
+            let completedMachines = 0;
+            let totalRoundWin = 0;
+            let hasJackpot = false;
 
-                // Resetování pásu na začátek bez animace (aby mohl znovu padat dolů)
-                strip.style.transition = 'none';
-                strip.style.top = '0px';
-                
-                // Malý hack pro prohlížeč, aby si všiml resetu pozice
-                strip.offsetHeight; 
+            machines.forEach((machine, mIndex) => {
+                const results = [];
+                machine.strips.forEach((strip, sIndex) => {
+                    strip.style.transition = 'none';
+                    strip.style.top = '0px';
+                    strip.style.filter = 'blur(0px)'; // Reset blur
+                    strip.offsetHeight; 
 
-                // Spuštění animace po mírném zpoždění
-                const stopAt = 30 + randomIndex; // zastavíme na symbolu hluboko v poli (index 30+)
-                const offset = -(stopAt * symbolHeight);
-                
-                // Nastavení animace s různým časem pro každý válec
-                strip.style.transition = `top ${1.5 + (i * 0.5)}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
-                strip.style.top = offset + 'px';
+                    const randIdx = Math.floor(Math.random() * symbols.length);
+                    const finalSymbol = symbols[randIdx];
+                    results.push(finalSymbol);
 
-                // Přepíšeme symbol na cílové pozici, aby odpovídal našemu výsledku
-                strip.children[stopAt].textContent = finalSymbol;
-            }
+                    const stopIndex = 20 + randIdx; 
+                    const offset = -(stopIndex * symbolHeight);
+                    const duration = 1.8 + (sIndex * 0.4) + (Math.random() * 0.3);
+                    
+                    // Start spin animation
+                    setTimeout(() => {
+                        strip.style.transition = `top ${duration}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                        strip.style.top = offset + 'px';
+                        strip.style.filter = 'blur(3px)'; // Motion blur ON
+                    }, 10);
 
-            // Vyhodnocení po skončení poslední animace (cca 3s)
-            setTimeout(() => {
-                evaluate(results, bet);
-                isSpinning = false;
-                document.getElementById('spin-btn').disabled = false;
-            }, 3000);
+                    strip.children[stopIndex].textContent = finalSymbol;
+
+                    // Stop blur těsně před koncem
+                    setTimeout(() => {
+                        strip.style.filter = 'blur(0px)';
+                    }, (duration * 1000) - 300);
+                });
+
+                setTimeout(() => {
+                    const winData = calculateWin(results, betPerMachine);
+                    if (winData.win > 0) {
+                        totalRoundWin += winData.win;
+                        
+                        // Vizuální efekt podle typu výhry
+                        const label = document.getElementById(`win-label-${machine.id}`);
+                        label.textContent = `+${winData.win}`;
+                        label.style.opacity = '1';
+                        label.style.transform = 'scale(1) rotate(-10deg)';
+
+                        if (winData.isJackpot) {
+                            machine.element.classList.add('winner-jackpot');
+                            hasJackpot = true;
+                            createMiniConfetti(machine.element); // Lokální konfety
+                        } else {
+                            machine.element.classList.add('winner-regular');
+                        }
+                    }
+                    completedMachines++;
+                    if (completedMachines === machines.length) {
+                        finalizeRound(totalRoundWin, hasJackpot);
+                    }
+                }, 3500);
+            });
         }
 
-        function evaluate(results, bet) {
+        function calculateWin(results, bet) {
             const [r1, r2, r3] = results;
-            let win = 0;
-            const msg = document.getElementById('message');
+            // 777 = MEGA JACKPOT
+            if (r1 === '7' && r2 === '7' && r3 === '7') return { win: bet * 100, isJackpot: true };
+            // Diamanty = JACKPOT
+            if (r1 === '💎' && r2 === '💎' && r3 === '💎') return { win: bet * 50, isJackpot: true };
+            
+            // Ostatní trojice
+            if (r1 === r2 && r2 === r3) return { win: bet * 10, isJackpot: false };
+            
+            // Dvojice
+            if (r1 === r2 || r2 === r3 || r1 === r3) return { win: bet * 2, isJackpot: false };
 
-            if (r1 === r2 && r2 === r3) {
-                win = (r1 === '7') ? bet * 50 : bet * 10;
-                msg.textContent = "VÝBORNĚ! Trojice!";
-            } else if (r1 === r2 || r2 === r3 || r1 === r3) {
-                win = bet * 2;
-                msg.textContent = "Dvojice! Máš výhru.";
+            return { win: 0, isJackpot: false };
+        }
+
+        function finalizeRound(totalWin, isJackpot) {
+            isSpinning = false;
+            document.getElementById('spin-btn').disabled = false;
+            document.getElementById('machine-slider').disabled = false;
+
+            if (totalWin > 0) {
+                balance += totalWin;
+                document.getElementById('last-win').textContent = totalWin.toLocaleString() + " Kč";
+                
+                if (isJackpot) {
+                    triggerJackpotOverlay(totalWin);
+                }
             } else {
-                msg.textContent = "Zkus to znovu.";
+                document.getElementById('last-win').textContent = "0 Kč";
             }
+            document.getElementById('balance').textContent = balance.toLocaleString();
+        }
 
-            if (win > 0) {
-                balance += win;
-                document.getElementById('balance').textContent = balance;
-                document.getElementById('win-display').textContent = `VYHRÁL JSI: ${win} Kč`;
+        // --- JACKPOT EFEKTY ---
+
+        function triggerJackpotOverlay(amount) {
+            const overlay = document.getElementById('jackpot-overlay');
+            const amtDisplay = document.getElementById('jackpot-amount');
+            amtDisplay.textContent = amount.toLocaleString() + " Kč";
+            overlay.classList.add('active');
+            
+            // Spustíme déšť mincí
+            const coinInterval = setInterval(createCoin, 50);
+
+            // Zastavení generování po 5 sekundách
+            setTimeout(() => {
+                clearInterval(coinInterval);
+            }, 5000);
+        }
+
+        function closeJackpot() {
+            document.getElementById('jackpot-overlay').classList.remove('active');
+        }
+
+        function createCoin() {
+            const coin = document.createElement('div');
+            coin.classList.add('coin');
+            coin.style.left = Math.random() * 100 + "vw";
+            coin.style.animationDuration = (Math.random() * 2 + 2) + "s"; // 2-4s
+            document.body.appendChild(coin);
+
+            setTimeout(() => { coin.remove(); }, 4000);
+        }
+
+        // Malé konfety pouze nad výherním automatem
+        function createMiniConfetti(element) {
+            const rect = element.getBoundingClientRect();
+            for(let i=0; i<10; i++) {
+                const part = document.createElement('div');
+                part.style.position = 'fixed';
+                part.style.left = (rect.left + rect.width/2) + 'px';
+                part.style.top = (rect.top + rect.height/2) + 'px';
+                part.style.width = '8px';
+                part.style.height = '8px';
+                part.style.background = ['#ffd700', '#ff00de', '#00fff2'][Math.floor(Math.random()*3)];
+                part.style.zIndex = '50';
+                part.style.transition = 'all 1s ease-out';
+                document.body.appendChild(part);
+
+                setTimeout(() => {
+                    part.style.transform = `translate(${Math.random()*100 - 50}px, ${Math.random()*100 - 150}px) rotate(${Math.random()*360}deg)`;
+                    part.style.opacity = 0;
+                }, 10);
+                setTimeout(() => part.remove(), 1000);
             }
         }
     </script>
